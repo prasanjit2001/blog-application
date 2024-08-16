@@ -5,14 +5,21 @@ import com.blog.blog_app.entities.Category;
 import com.blog.blog_app.exceptions.ResourceNotFoundException;
 import com.blog.blog_app.repositories.CategoryRepository;
 import com.blog.blog_app.services.CategoryService;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@EnableCaching
 @Service
+@Slf4j
 public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
@@ -29,6 +36,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @CachePut(value = "categories", key = "#categoryId")
     public CategoryDto updateCategory(CategoryDto categoryDto, Integer categoryId) {
         Category cat = this.categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category ", "Category Id", categoryId));
@@ -42,6 +50,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @CacheEvict(value = "categories", key = "#categoryId")
     public void deleteCategory(Integer categoryId) {
         Category cat = this.categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category ", "category id", categoryId));
@@ -49,7 +58,9 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Cacheable(value = "categories", key = "#categoryId")
     public CategoryDto getCategory(Integer categoryId) {
+        log.info("Fetching category with id {} from database", categoryId);  // Log before DB access
         Category cat = this.categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "category id", categoryId));
 
@@ -59,6 +70,7 @@ public class CategoryServiceImpl implements CategoryService {
 
 
     @Override
+    @Cacheable(value = "allCategories")
     public List<CategoryDto> getCategories() {
         List<Category> categories = this.categoryRepository.findAll();
         List<CategoryDto> catDtos = categories.stream().map((cat) -> this.modelMapper.map(cat, CategoryDto.class))

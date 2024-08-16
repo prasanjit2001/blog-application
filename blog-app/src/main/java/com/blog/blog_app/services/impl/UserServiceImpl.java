@@ -10,6 +10,10 @@ import com.blog.blog_app.repositories.UserRepository;
 import com.blog.blog_app.services.UserService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@EnableCaching
 public class UserServiceImpl implements UserService {
     @Autowired
     private ModelMapper modelMapper;
@@ -48,6 +53,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @CachePut(value = "users", key = "#userId")
     public UserDto updateUser(UserDto userDto, Integer userId) {
         User user=this.userRepository.findById(userId).orElseThrow(()->new ResourceNotFoundException("User","id",userId));
        user.setName(userDto.getName());
@@ -59,6 +65,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users", key = "#userId")
     public UserDto getUserById(Integer userId) {
         User user = this.userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", " Id ", userId));
@@ -67,6 +74,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users")
     public List<UserDto> getAllUsers() {
         List<User> users = this.userRepository.findAll();
         List<UserDto> userDtos = users.stream().map(user -> this.userToDto(user)).collect(Collectors.toList());
@@ -75,6 +83,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @CacheEvict(value = "users", key = "#userId")
     public void deleteUser(Integer userId) {
         User user = this.userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "Id", userId));
@@ -89,6 +98,5 @@ public class UserServiceImpl implements UserService {
     public UserDto userToDto(User user){
         UserDto userDto=this.modelMapper.map(user,UserDto.class);
         return userDto;
-
     }
 }

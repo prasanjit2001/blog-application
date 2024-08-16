@@ -12,6 +12,9 @@ import com.blog.blog_app.repositories.UserRepository;
 import com.blog.blog_app.services.PostService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -58,6 +61,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @CachePut(value = "posts", key = "#postId")
     public PostDto updatePost(PostDto postDto, Integer postId) {
 
         Post post = this.postRepo.findById(postId)
@@ -76,6 +80,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @CacheEvict(value = "posts", key = "#postId")
     public void deletePost(Integer postId) {
 
         Post post = this.postRepo.findById(postId)
@@ -113,6 +118,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Cacheable(value = "posts", key = "#postId")
     public PostDto getPostById(Integer postId) {
         Post post = this.postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post", "post id", postId));
@@ -120,6 +126,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Cacheable(value = "postsByCategory", key = "#categoryId")
     public List<PostDto> getPostsByCategory(Integer categoryId) {
 
         Category cat = this.categoryRepo.findById(categoryId)
@@ -133,6 +140,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Cacheable(value = "postsByUser", key = "#userId")
     public List<PostDto> getPostsByUser(Integer userId) {
 
         User user = this.userRepo.findById(userId)
@@ -146,6 +154,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Cacheable(value = "posts", key = "#keyword")
     public List<PostDto> searchPosts(String keyword) {
         List<Post> posts = this.postRepo.searchByTitle("%" + keyword + "%");
         List<PostDto> postDtos = posts.stream().map((post) -> this.modelMapper.map(post, PostDto.class)).collect(Collectors.toList());
